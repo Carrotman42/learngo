@@ -6,6 +6,7 @@ package main
 
 import (
 	"strconv"
+	"os"
 	"fmt"
 )
 
@@ -69,6 +70,9 @@ func StartUI(input func()string) {
 		wr("There was an error with loading user data: ", err)
 		wr("If this is your first time running the program, ignore this!")
 		wr("Otherwise, existing data will be overwritten on next save")
+		
+		fmt.Print("Press enter...")
+		input()
 	}
 	
 	if U.DoneTutorial {
@@ -118,11 +122,11 @@ func StartUI(input func()string) {
 			last = line
 		}
 		
-		if ind, err := strconv.Atoi(line); err != nil {
-			lastErr = err
+		if ind, err := strconv.Atoi(line); err != nil && line != ".." {
+			lastErr = fmt.Errorf("not a valid choice: %v", line)
 		} else if ind < 0 || ind > len(chs) {
 			lastErr = fmt.Errorf("index out of bounds: %v", ind)
-		} else if ind == len(chs) {
+		} else if ind == len(chs) || line == ".." {
 			menus.Pop()
 		} else {
 			var next UIScreen
@@ -141,8 +145,11 @@ func (TutUI) Choices(o Out) []Action {
 	o("Welcome to Kevin's Learning Thing!")
 	o("This program helps you learn the Go programming language by throwing you straight into it and asking questions.")
 	o("Many problems have hints you can unlock and some even have links to online information.")
-	o("When in doubt, Google it! A search engine is can be a programmer's most helpful resource.\n")
+	o("When in doubt, Google it! A search engine can be a programmer's most helpful resource.\n")
 	U.DoneTutorial = true
+	
+	// Make the workspace directory
+	os.Mkdir(Workspace, 0)
 	Save()
 	return []Action {
 		{ "Press '0' and then 'Enter' or 'Return' to continue",
@@ -198,12 +205,6 @@ func (p ProblemMenu) Choices(o Out) []Action {
 			}
 			return ProblemSolved{pid}, nil}},
 	}
-	if len(pr.Help) > 0 {
-		//ret = append(ret, "Help with this problem")
-	}
-	if len(pr.Hint) > 0 {
-		//ret = append(ret, "Read hint")
-	}
 	
 	// Only let them start over if they haven't solved it already
 	//    (I don't want to deal with removing the solved status)
@@ -216,6 +217,25 @@ func (p ProblemMenu) Choices(o Out) []Action {
 				return WriteOut(pid)
 			}})})
 	}
+	
+	if len(pr.Help) > 0 {
+		ret = append(ret, Action{"Show help topic", 
+			func(o Out) (UIScreen, error){
+				return nil, ShowHelp(pid)
+			}})
+	}
+	if len(pr.Hint) > 0 {
+		if U.IsHintUnlocked(pid) {
+			ret = append(ret, Action{"Show hint", Choice(ShowHint{pid})})
+		} else {
+			ret = append(ret, Action{"Unlock hint", Choice(DoubleCheck{
+				fmt.Sprintf("spend %v points (out of %v remaining points) to unlock the hint", HintCost, U.Points),
+				func(Out) error {
+					return U.UnlockHint(pid)
+				}})})
+		}
+	}
+	
 	return ret
 }
 type ProblemSolved struct {
@@ -230,6 +250,15 @@ func (p ProblemSolved) Choices(o Out) []Action {
 	
 	return nil
 }
+
+type ShowHint struct {
+	pid int
+}
+func (h ShowHint) Choices(o Out) []Action {
+	o(Probs[h.pid].Hint)
+	return nil
+}
+
 type Stats struct{}
 func (Stats) Choices(o Out) []Action {
 	o("User stats:")

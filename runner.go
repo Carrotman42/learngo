@@ -72,10 +72,15 @@ func Edit(pid int) error {
 			return err
 		}
 	}
-	return exec.Command("notepad++.exe", fi).Run()
+	return exec.Command(`C:\Program Files (x86)\Notepad++\notepad++.exe`, fi).Run()
 }
 
-
+func ShowHelp(pid int) error {
+	f := Probs[pid].Help
+	
+	return exec.Command("cmd", "/c", "start", f).Run()
+}
+	
 
 
 

@@ -10,14 +10,15 @@ import (
 	"os"
 )
 
-const UserFile = "user.dat"
+const Workspace = "workspace/"
+const UserFile = Workspace + "user.dat"
 const ProblemFile = "probs.yml"
-const HintCost = 10
+const HintCost = 0
 
 
 // Saves all user data
 func Save() error {
-	if f, err := os.Create("user.dat"); err != nil {
+	if f, err := os.Create(UserFile); err != nil {
 		return err
 	} else {
 		defer f.Close()
@@ -32,7 +33,7 @@ func Save() error {
 // Loads all user data
 func Load() error {
 	var ret error
-	if f, err := os.Open("user.dat"); err == nil {
+	if f, err := os.Open(UserFile); err == nil {
 		dec := gob.NewDecoder(f)
 		ret = dec.Decode(&U)
 		f.Close()
@@ -51,8 +52,6 @@ func init() {
 	Load() // Ignore if it fails
 }
 
-
-const WorkDir = "workspace"
 
 type TestCase struct {
 	Input []string
@@ -153,14 +152,21 @@ func WriteDefault(pid int, dest io.Writer) {
 		o(v)
 	}
 	
+	o("\n\n//////////////////////////////////////////////////////////////////////")
+	o("// NOTE: Ignore everything below this notice*, you're supposed to fill")
+	o(`//       out the "solve" function above`)
+	o("//////////////////////////////////////////////////////////////////////")
 	o("func main() {")
 	for _,v := range p.Tests {
 		v.Write(o)
 	}
 	o("}")
+	o("// *If you're interested, the code in func main contains the test cases")
+	o("//    for testing your code. If you modify it it will likely mess things up")
+	o("//    if you aren't careful. But looking at it to understand it won't hurt!")
 }
 func GetFile(pid int) string {
-	return fmt.Sprint(WorkDir, "/", pid, ".go")
+	return fmt.Sprint(Workspace, pid, ".go")
 }
 
 

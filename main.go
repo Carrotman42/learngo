@@ -17,9 +17,6 @@ func getInput() func()string {
 }
 func main() {
 	fmt.Println("Started!")
-	
-	
-	
 	StartUI(getInput())
 }
 
