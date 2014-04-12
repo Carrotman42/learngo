@@ -35,7 +35,7 @@
     - 15
 - name: Ifs
   difficulty: 1
-  help: http://golangtutorials.blogspot.com/2011/06/control-structures-if-else-statement.html
+  help: &ifhelp http://golangtutorials.blogspot.com/2011/06/control-structures-if-else-statement.html
   hint: If a is greater than b, return a. Else return b.
   parts:
   - |
@@ -83,7 +83,7 @@
     - 5
 - name: More ifs
   difficulty: 2
-  help: http://golangtutorials.blogspot.com/2011/06/control-structures-if-else-statement.html
+  help: *ifhelp
   parts:
   - |
      package main

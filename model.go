@@ -152,6 +152,15 @@ func WriteDefault(pid int, dest io.Writer) {
 		o(v)
 	}
 	
+	if len(p.Hint) > 0 {
+		o("//Stuck? A hint is available! Check the command prompt or terminal on how to access it")
+		o("//   (the usually black-backgrounded box which you used to talk to this program")
+	}
+	if len(p.Help) > 0 {
+		o("//Stuck? A help site is available! Check the command prompt or terminal on how to access it")
+		o("//   (the usually black-backgrounded box which you used to talk to this program")
+	}
+	
 	o("\n\n//////////////////////////////////////////////////////////////////////")
 	o("// NOTE: Ignore everything below this notice*, you're supposed to fill")
 	o(`//       out the "solve" function above`)
