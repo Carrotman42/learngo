@@ -32,12 +32,14 @@ func (c RunError) Error() string {
 
 func Test(o Out, pid int) error {
 	// First compile it
+	o("\nCompiling...")
 	output, err := exec.Command("go", "build", "-o", "test.exe", GetFile(pid)).CombinedOutput()
 	if err != nil {
 		return CompileError{err, output}
 	}
 	
 	// Run it!
+	o("\nRunning...\n")
 	output, err = exec.Command("test.exe").CombinedOutput()
 	if err != nil || len(output) > 0 {
 		return RunError{err, output}

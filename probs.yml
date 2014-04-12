@@ -11,7 +11,8 @@
      }
   tests:
   - input:
-    output: '"Hello World"'
+    output:
+    - '"Hello World"'
 - name: Simple math
   difficulty: 1
   parts:
@@ -24,7 +25,42 @@
         return 0
      }
   tests:
-  - input: 1, 2, 7
-    output: 10
-  - input: 4, 5, 6
-    output: 15
+  - input:
+    - 1, 2, 7
+    output:
+    - 10
+  - input:
+    - 4, 5, 6
+    output:
+    - 15
+- name: Ifs
+  difficulty: 1
+  help: http://golangtutorials.blogspot.com/2011/06/control-structures-if-else-statement.html
+  hint: If a is greater than b, return a. Else return b.
+  parts:
+  - |
+     package main
+     import "fmt"
+     
+     // Returns the larger of the two parameters 'a' and 'b'
+     func solve(a, b int) int {
+        return 0
+     }
+  tests:
+  - input:
+    - 1, 2
+    output:
+    - 2
+  - input:
+    - 6, 6
+    output:
+    - 6
+  - input:
+    - 1, 1
+    output:
+    - 1
+     
+     
+     
+     
+     

@@ -45,6 +45,10 @@ func StartUI(input func()string) {
 		for i,v := range ch {
 			wr(i, ": ", v)
 		}
+		if len(menuStack) > 1 {
+			wr(len(ch), ": Back")
+		}
+		
 		
 		fmt.Print("\nWhat do? ")
 		choice := input()
@@ -58,8 +62,16 @@ func StartUI(input func()string) {
 		}
 		
 		fmt.Println()
-		if i,err := strconv.Atoi(choice); err != nil || i < 0 || i > len(ch) {
-			wr("\tOops: invalid choice:", err)
+		if i,err := strconv.Atoi(choice); err != nil || i < 0 || i >= len(ch) {
+			if i == len(ch) {
+				menuStack = menuStack[:lll]
+				clear = true
+				continue
+			}
+			if err == nil {
+				err = fmt.Errorf("out of range: %v", i)
+			}
+			wr("\tOops: invalid choice: ", err)
 		} else if n, err := cur.Choose(wr, i); err != nil {
 			wr(err)
 		} else {
@@ -72,6 +84,24 @@ func StartUI(input func()string) {
 		}
 		fmt.Println()
 	}
+}
+
+type DoubleCheck struct {
+	msg string
+	action func()error
+	done bool
+}
+func (d DoubleCheck) Choices(o Out) []string {
+	if d.done { //already called this action
+		return nil
+	}
+	o("Are you sure you want to ", d.msg, "?")
+	return []string{"Yes, of course"}
+}
+func (d*DoubleCheck) Choose(o Out, i int) (UIScreen, error) {
+	// We'll only get in here if they choose to confirm
+	d.done = true
+	return nil, d.action()
 }
 
 type NotImplemented string
@@ -122,7 +152,7 @@ func (p ProblemScreen) Choices(o Out) []string {
 		ret := make([]string, len(Probs))
 		for i,v := range Probs {
 			str := v.Name
-			if IsSolved(i) {
+			if U.IsSolved(i) {
 				str += " (SOLVED)"
 			}
 			ret[i] = str
@@ -135,13 +165,24 @@ func (p ProblemScreen) Choices(o Out) []string {
 		var ret []string
 		if p.JustSolved {
 			o("\tYou've completed the problem, good job!")
-		} else if IsSolved(pid) {
-			o(`You've solved this one already!`)
 		} else {
 			ret = []string{
 				"Open problem",
 				"Run all tests",
-				"Start problem over",
+			}
+			if len(pr.Help) > 0 {
+				//ret = append(ret, "Help with this problem")
+			}
+			if len(pr.Hint) > 0 {
+				//ret = append(ret, "Read hint")
+			}
+			
+			if U.IsSolved(pid) {
+				o("\nNote: You've solved this one already!\n")
+			} else {
+				// Only let them start over if they haven't solved it already
+				//    (I don't want to deal with removing the solved status)
+				ret = append(ret, "Start problem over")
 			}
 		}
 		return ret
@@ -152,8 +193,6 @@ func (p*ProblemScreen) Choose(o Out, i int) (UIScreen, error) {
 	if pid == -1 {
 		// Problem submenu
 		return &ProblemScreen{i,false}, nil
-	} else if IsSolved(pid) {
-		
 	}
 	
 	var err error
@@ -164,11 +203,15 @@ func (p*ProblemScreen) Choose(o Out, i int) (UIScreen, error) {
 			err = Test(o, pid) //Blocks until tests are done
 			if err == nil {
 				// Mark the problem as solved
-				MarkSolved(pid)
+				U.MarkSolved(pid)
 				p.JustSolved = true
 			}
 		case 2:
-			err = WriteOut(pid)
+			return &DoubleCheck{"delete your work and start this problem over from scratch",
+				func() error {
+					return WriteOut(pid)
+				}, false,
+			}, nil
 	}
 	return nil, err
 }

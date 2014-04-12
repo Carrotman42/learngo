@@ -19,22 +19,28 @@ func Save() error {
 	if f, err := os.Create("user.dat"); err != nil {
 		return err
 	} else {
-		err = gob.NewEncoder(f).Encode(solved)
-		f.Close()
-		return err
+		defer f.Close()
+		enc := gob.NewEncoder(f)
+		if err = enc.Encode(U); err != nil {
+			panic(err)
+			return err
+		}
+		return nil
 	}
 }
 // Loads all user data
 func Load() {
 	var ok bool
 	if f, err := os.Open("user.dat"); err == nil {
-		if err = gob.NewDecoder(f).Decode(&solved); err == nil {
-			ok = true
+		dec := gob.NewDecoder(f)
+		if err = dec.Decode(&U); err != nil {
+			panic(err)
 		}
 		f.Close()
+		ok = true
 	}
 	if !ok {
-		solved = make(map[int]bool)
+		U.Probs = make(map[int]ProblemStatus)
 	}
 }
 
@@ -80,12 +86,29 @@ fmt.Println("   actual   : ", `, outvars, `)
 	o("}")
 }
 
-var solved map[int]bool
-func IsSolved(pid int) bool {
-	return solved[pid]
+type ProblemStatus uint
+const (
+	Solved ProblemStatus = 1 << iota
+	HintUnlocked
+)
+type User struct {
+	Probs map[int]ProblemStatus
+	Points int
 }
-func MarkSolved(pid int) {
-	solved[pid] = true
+
+// Single user for now
+var U User
+
+func (u User) IsSolved(pid int) bool {
+	return u.Probs[pid] & Solved != 0
+}
+func (u*User) MarkSolved(pid int) {
+	if u.IsSolved(pid) { // double check that they don't just farm for points here
+		return
+	}
+	u.Probs[pid] = u.Probs[pid] | Solved
+	p := Probs[pid]
+	u.Points += p.Difficulty*2 + 5
 	
 	if err := Save(); err != nil {
 		fmt.Println("Error saving:", err)
@@ -95,6 +118,7 @@ func MarkSolved(pid int) {
 type Problem struct {
 	Name string
 	Difficulty int
+	Help, Hint string
 	Parts []string
 	Tests []TestCase
 }
