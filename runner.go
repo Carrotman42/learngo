@@ -24,10 +24,11 @@ type RunError struct {
 	out []byte
 }
 func (c RunError) Error() string {
+	str := string(c.out) + "\n_________________________________________"
 	if c.er == nil {
-		return string(c.out)
+		return str
 	}
-	return fmt.Sprint("Run error: ", c.er, "\n\n", string(c.out))
+	return fmt.Sprint("Run error: ", c.er, "\n\n", str)
 }
 
 func Test(o Out, pid int) error {

@@ -15,3 +15,6 @@ func (l*SepList) Append(s string) {
 func (l SepList) String() string {
 	return l.cur
 }
+
+
+type Out func(...interface{})

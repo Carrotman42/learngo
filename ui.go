@@ -15,208 +15,236 @@ func wr(s...interface{}) {
 	}
 	fmt.Println()
 }
-func StartUI(input func()string) {
-	menuStack := []UIScreen{MainMenu{}}
-	
-	var last string
-	clear := true
-	for {
-		if clear {
-			ClearScreen()
-			clear = false
-		}
-		lll := len(menuStack)-1
-		cur := menuStack[lll]
-		ch := cur.Choices(wr)
-		
-		if len(ch) == 0 {
-			// This means the ui screen wants to be popped off the stack
-			fmt.Print("\nPress enter...")
-			input()
-			
-			// After waiting for them, do that
-			menuStack[lll] = nil // for gc
-			menuStack = menuStack[:lll]
-			
-			clear = true
-			continue
-		}
-		
-		for i,v := range ch {
-			wr(i, ": ", v)
-		}
-		if len(menuStack) > 1 {
-			wr(len(ch), ": Back")
-		}
-		
-		
-		fmt.Print("\nWhat do? ")
-		choice := input()
-		if choice == "" {
-			if last == "" {
-				continue
-			}
-			choice = last
-		} else {
-			last = choice
-		}
-		
-		fmt.Println()
-		if i,err := strconv.Atoi(choice); err != nil || i < 0 || i >= len(ch) {
-			if i == len(ch) {
-				menuStack = menuStack[:lll]
-				clear = true
-				continue
-			}
-			if err == nil {
-				err = fmt.Errorf("out of range: %v", i)
-			}
-			wr("\tOops: invalid choice: ", err)
-		} else if n, err := cur.Choose(wr, i); err != nil {
-			wr(err)
-		} else {
-			if n != nil { // if n==nil it means stay on page
-				// Else navigate further into the menus
-				menuStack = append(menuStack, n)
-			}
-			// Successful, clear the screen!
-			clear = true
-		}
-		fmt.Println()
-	}
+type MenuStack []UIScreen
+func (m MenuStack) Cur() UIScreen {
+	return m[len(m)-1]
+}
+func (m*MenuStack) Push(u UIScreen) {
+	*m = append(*m, u)
+}
+func (m*MenuStack) Pop() {
+	*m = (*m)[:len(*m)-1]
 }
 
-type DoubleCheck struct {
-	msg string
-	action func()error
-	done bool
+type Action struct {
+	Name string
+	Act func(o Out) (UIScreen, error)
 }
-func (d DoubleCheck) Choices(o Out) []string {
-	if d.done { //already called this action
-		return nil
-	}
-	o("Are you sure you want to ", d.msg, "?")
-	return []string{"Yes, of course"}
+type UIScreen interface {
+	Choices(o Out) []Action
 }
-func (d*DoubleCheck) Choose(o Out, i int) (UIScreen, error) {
-	// We'll only get in here if they choose to confirm
-	d.done = true
-	return nil, d.action()
+
+var DontClear = dontClear{}
+type dontClear struct{}
+func (dontClear) Error() string {
+	return ""
 }
+var PopParent = popParent{}
+type popParent struct{}
+func (popParent) Choices(o Out) []Action { return nil }
+
 
 type NotImplemented string
-func (n NotImplemented) Choices(o Out) []string {
+func (n NotImplemented) Choices(o Out) []Action {
 	o(string(n), " is not yet implemented, sorry")
 	return nil
 }
-func (n NotImplemented) Choose(o Out, i int) (UIScreen, error) {
-	return nil, nil
+type DoubleCheck struct {
+	msg string
+	thing func(Out) error
 }
-
-type Out func(...interface{})
-
-type UIScreen interface {
-	Choices(o Out) []string
-	// May block as long as you want
-	Choose(o Out, i int) (UIScreen, error)
-}
-
-type MainMenu struct {}
-
-func (MainMenu) Choices(o Out) []string {
-	o("Welcome to Kevin's Learning Thing")
-	return []string {
-		"Problems",
-		"Stats",
-		"Settings",
+func (d DoubleCheck) Choices(o Out) []Action {
+	o("Are you sure you want to ", d.msg, "?")
+	return []Action{
+		{"Yes, of course", func(o Out) (UIScreen, error) {
+			return PopParent, d.thing(o)}},
 	}
 }
-func (MainMenu) Choose(o Out, i int) (UIScreen, error) {
-	switch i {
-		case 0: return &ProblemScreen{-1,false}, nil
-		case 1: return NotImplemented("Stats"), nil
-		case 2: return NotImplemented("Settings"), nil
-	}
-	return nil, nil
-}
 
-type ProblemScreen struct {
-	Prob int
-	JustSolved bool
-}
-func (p ProblemScreen) Choices(o Out) []string {
-	// Write out all of the possible problems
-	pid := p.Prob
-	if pid == -1 {
-		o("Here's a list of problems to look at:")
-		ret := make([]string, len(Probs))
-		for i,v := range Probs {
-			str := v.Name
-			if U.IsSolved(i) {
-				str += " (SOLVED)"
-			}
-			ret[i] = str
-		}
-		return ret
-	} else {
-		pr := Probs[pid]
-		o(`Problem "`, pr.Name, `"`)
-		
-		var ret []string
-		if p.JustSolved {
-			o("\tYou've completed the problem, good job!")
-		} else {
-			ret = []string{
-				"Open problem",
-				"Run all tests",
-			}
-			if len(pr.Help) > 0 {
-				//ret = append(ret, "Help with this problem")
-			}
-			if len(pr.Hint) > 0 {
-				//ret = append(ret, "Read hint")
-			}
-			
-			if U.IsSolved(pid) {
-				o("\nNote: You've solved this one already!\n")
-			} else {
-				// Only let them start over if they haven't solved it already
-				//    (I don't want to deal with removing the solved status)
-				ret = append(ret, "Start problem over")
-			}
-		}
-		return ret
-	}
-}
-func (p*ProblemScreen) Choose(o Out, i int) (UIScreen, error) {
-	pid := p.Prob
-	if pid == -1 {
-		// Problem submenu
-		return &ProblemScreen{i,false}, nil
+
+func StartUI(input func()string) {
+	var menus MenuStack
+	var last string
+	if err := Load(); err != nil {
+		wr("There was an error with loading user data: ", err)
+		wr("If this is your first time running the program, ignore this!")
+		wr("Otherwise, existing data will be overwritten on next save")
 	}
 	
-	var err error
-	switch i {
-		case 0: // Pop up editor
-			err = Edit(pid)
-		case 1: // Run tests
-			err = Test(o, pid) //Blocks until tests are done
-			if err == nil {
-				// Mark the problem as solved
-				U.MarkSolved(pid)
-				p.JustSolved = true
-			}
-		case 2:
-			return &DoubleCheck{"delete your work and start this problem over from scratch",
-				func() error {
-					return WriteOut(pid)
-				}, false,
-			}, nil
+	if U.DoneTutorial {
+		menus.Push(MainUI{})
+	} else {
+		menus.Push(TutUI{})
+		U.DoneTutorial = true
 	}
-	return nil, err
+	
+	var lastErr error
+	
+	for len(menus) > 0{
+		if lastErr != nil {
+			if lastErr != DontClear {
+				wr(lastErr)
+			}
+			lastErr = nil
+		} else {
+			ClearScreen()
+		}
+		chs := menus.Cur().Choices(wr)
+		if len(chs) == 0 {
+			if chs == nil {
+				fmt.Print("\n\nPress enter...")
+				input()
+			}
+			menus.Pop()
+			continue
+		}
+		wr()
+		for i,v := range chs {
+			wr(i, ": ", v.Name)
+		}
+		if len(menus) > 1 {
+			wr(len(chs), ": Back")
+		}
+		wr()
+		
+		fmt.Print("Do what? ")
+		line := input()
+		if line == "" {
+			if last == "" {
+				continue
+			}
+			line = last
+		} else {
+			last = line
+		}
+		
+		if ind, err := strconv.Atoi(line); err != nil {
+			lastErr = err
+		} else if ind < 0 || ind > len(chs) {
+			lastErr = fmt.Errorf("index out of bounds: %v", ind)
+		} else if ind == len(chs) {
+			menus.Pop()
+		} else {
+			var next UIScreen
+			next, lastErr = chs[ind].Act(wr)
+			// Save lastErr until the next loop iteration
+			if next == PopParent {
+				menus.Pop()
+			} else if next != nil {
+				menus.Push(next)
+			}
+		}
+	}
+}
+type TutUI struct{}
+func (TutUI) Choices(o Out) []Action {
+	o("Welcome to Kevin's Learning Thing!")
+	o("This program helps you learn the Go programming language by throwing you straight into it and asking questions.")
+	o("Many problems have hints you can unlock and some even have links to online information.")
+	o("When in doubt, Google it! A search engine is can be a programmer's most helpful resource.\n")
+	U.DoneTutorial = true
+	Save()
+	return []Action {
+		{ "Press '0' and then 'Enter' or 'Return' to continue",
+			func(Out) (UIScreen, error) { return MainUI{}, nil } },
+	}
 }
 
+func Choice(u UIScreen) func(Out) (UIScreen, error) {
+	return func(Out) (UIScreen, error) {
+		return u, nil
+	}
+} 
 
+type MainUI struct {}
+func (MainUI) Choices(o Out) []Action {
+	o("Welcome to Kevin's Learning Thing!")
+	return []Action {
+		{ "Problems", Choice(ProblemList{})},
+		{ "Stats", Choice(Stats{})},
+		{ "Settings", Choice(NotImplemented("Settings"))},
+	}
+}
 
+// Todo: pagination
+type ProblemList struct {}
+func (ProblemList) Choices(o Out) []Action {
+	o("Choose a problem!")
+	ret := make([]Action, len(Probs))
+	for i,v := range Probs {
+		i := i
+		var str = v.Name
+		if U.IsSolved(i) {
+			str += " (SOLVED)"
+		}
+		ret[i] = Action{str, Choice(ProblemMenu{i})}
+	}
+	return ret
+}
 
-
+type ProblemMenu struct {
+	pid int
+}
+func (p ProblemMenu) Choices(o Out) []Action {
+	pid := p.pid
+	pr := Probs[pid]
+	o(`Problem "`, pr.Name, `"`)
+	ret := []Action{
+		{"Open problem", func(o Out) (UIScreen, error){
+			return nil, Edit(pid)}},
+		{"Run all tests", func(o Out) (UIScreen, error){
+			if err := Test(o, pid); err != nil {
+				return nil, err
+			}
+			return ProblemSolved{pid}, nil}},
+	}
+	if len(pr.Help) > 0 {
+		//ret = append(ret, "Help with this problem")
+	}
+	if len(pr.Hint) > 0 {
+		//ret = append(ret, "Read hint")
+	}
+	
+	// Only let them start over if they haven't solved it already
+	//    (I don't want to deal with removing the solved status)
+	if U.IsSolved(pid) {
+		o("\nNote: You've solved this one already!\n")
+	} else {
+		ret = append(ret, Action{"Start problem over", Choice(DoubleCheck{
+			"delete your work and start this problem over from scratch",
+			func(Out) error {
+				return WriteOut(pid)
+			}})})
+	}
+	return ret
+}
+type ProblemSolved struct {
+	pid int
+}
+func (p ProblemSolved) Choices(o Out) []Action {
+	pid := p.pid
+	pr := Probs[pid]
+	o(`Problem "`, pr.Name, `" correctly solved!`)
+	U.MarkSolved(pid)
+	o("   Current points: ", U.Points)
+	
+	return nil
+}
+type Stats struct{}
+func (Stats) Choices(o Out) []Action {
+	o("User stats:")
+	o("\tPoints: ", U.Points)
+	
+	o("\nProblem Name (Difficulty): SolvedStatus")
+	for i,v := range Probs {
+		var solv string
+		if U.IsSolved(i) {
+			solv = "Solved"
+		} else {
+			solv = "Unsolved"
+		}
+		o("\t", v.Name, " (", v.Difficulty, "): ", solv)
+	}
+	
+	return nil
+}

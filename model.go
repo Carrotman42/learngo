@@ -12,6 +12,7 @@ import (
 
 const UserFile = "user.dat"
 const ProblemFile = "probs.yml"
+const HintCost = 10
 
 
 // Saves all user data
@@ -29,19 +30,20 @@ func Save() error {
 	}
 }
 // Loads all user data
-func Load() {
-	var ok bool
+func Load() error {
+	var ret error
 	if f, err := os.Open("user.dat"); err == nil {
 		dec := gob.NewDecoder(f)
-		if err = dec.Decode(&U); err != nil {
-			panic(err)
-		}
+		ret = dec.Decode(&U)
 		f.Close()
-		ok = true
+	} else {
+		ret = err
 	}
-	if !ok {
+	if ret != nil {
+		// Initialize a blank copy of stuff
 		U.Probs = make(map[int]ProblemStatus)
 	}
+	return nil
 }
 
 
@@ -94,11 +96,31 @@ const (
 type User struct {
 	Probs map[int]ProblemStatus
 	Points int
+	DoneTutorial bool
 }
 
 // Single user for now
 var U User
 
+func (u User) IsHintUnlocked(pid int) bool {
+	return u.Probs[pid] & HintUnlocked != 0
+}
+func (u*User) UnlockHint(pid int) error {
+	if u.IsHintUnlocked(pid) {
+		panic("Tried to unlock already unlocked hint")
+	}
+	
+	if u.Points < HintCost {
+		return fmt.Errorf("Hints cost %v points, but you only have %v", HintCost, u.Points)
+	}
+	u.Points -= HintCost
+	u.Probs[pid] = u.Probs[pid] | HintUnlocked
+	
+	if err := Save(); err != nil {
+		fmt.Println("Error saving:", err)
+	}
+	return nil
+}
 func (u User) IsSolved(pid int) bool {
 	return u.Probs[pid] & Solved != 0
 }
