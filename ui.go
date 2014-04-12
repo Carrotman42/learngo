@@ -142,10 +142,17 @@ func StartUI(input func()string) {
 }
 type TutUI struct{}
 func (TutUI) Choices(o Out) []Action {
-	o("Welcome to Kevin's Learning Thing!")
-	o("This program helps you learn the Go programming language by throwing you straight into it and asking questions.")
-	o("Many problems have hints you can unlock and some even have links to online information.")
-	o("When in doubt, Google it! A search engine can be a programmer's most helpful resource.\n")
+	o(`Welcome to Kevin's Learning Thing!
+This program helps you learn the Go programming language by throwing you
+straight into it and asking questions.
+
+Many problems have hints you can unlock and some even have links to online
+information. When in doubt, Google it! A search engine can be a programmer's
+most helpful resource.
+
+The goal is to solve as many problems as you can, learning Go as you go!
+`)
+
 	U.DoneTutorial = true
 	
 	// Make the workspace directory

@@ -36,54 +36,12 @@
 - name: Ifs
   difficulty: 1
   help: &ifhelp http://golangtutorials.blogspot.com/2011/06/control-structures-if-else-statement.html
-  hint: If a is greater than b, return a. Else return b.
-  parts:
-  - |
-     package main
-     import "fmt"
-     
-     // Returns the larger of the two parameters 'a' and 'b'
-     func solve(a, b int) int {
-        return 0
-     }
-  tests:
-  - input:
-    - 1, 2
-    output:
-    - 2
-  - input:
-    - 8, 6
-    output:
-    - 8
-  - input:
-    - 1, 1
-    output:
-    - 1
-- name: Average math
-  difficulty: 1
-  help: 'http://golang.org/ref/spec#Operator_precedence'
-  hint: Remember to use parenthesis to ensure order of operation!
-  parts:
-  - |
-     package main
-     import "fmt"
-     
-     // Returns the average of all of all three parameters
-     func solve(a, b, c int) int {
-        return 0
-     }
-  tests:
-  - input:
-    - 1, 2, 6
-    output:
-    - 3
-  - input:
-    - 4, 5, 6
-    output:
-    - 5
-- name: More ifs
-  difficulty: 2
-  help: *ifhelp
+  hint: |
+    Here is an example of how to return the value 7 when a is equal to 3:
+       if a == 3 {
+          return 7
+       }
+    Notice the fact that you must say "==" rather than just "=".
   parts:
   - |
      package main
@@ -120,7 +78,176 @@
     - 42, 77, 10
     output:
     - -1
+- name: Booleans 1
+  difficulty: 1
+  help: &boolhelp 'http://golang.org/ref/spec#Logical_operators'
+  hint: &boolhint | 
+    Consider the following input-output relationships for these "boolean operations":
+       AND (conjunction):
+        
+       `true && true` turns into `true`
+       `true && false` turns into `false`
+       `false && false` turns into `false`
+       `false && false` turns into `false`
+       
+       OR (disjunction):
+       `true || true` turns into `true`
+       `true || false` turns into `true`
+       `false || false` turns into `true`
+       `false || false` turns into `false`
+       
+       NOT (negation, opposite):
+       `!true` turns into `false`
+       `!false` turns into `true`
+       
+  parts:
+  - |
+     package main
+     import "fmt"
      
+     // Return true if both a and b are true. Otherwise return false.
+     func solve(a, b bool) bool {
+        return false
+     }
+  tests:
+  - input:
+    - true, true
+    output:
+    - true
+  - input:
+    - true, false
+    output:
+    - false
+  - input:
+    - false, true
+    output:
+    - false
+  - input:
+    - false, false
+    output:
+    - false
+- name: Booleans 2
+  difficulty: 1
+  help: *boolhelp
+  hint: *boolhint
+  parts:
+  - |
+     package main
+     import "fmt"
      
+     // When a is true return the opposite of b. When a is false return true.
+     func solve(a, b bool) bool {
+        return false
+     }
+  tests:
+  - input:
+    - true, true
+    output:
+    - false
+  - input:
+    - true, false
+    output:
+    - true
+  - input:
+    - false, true
+    output:
+    - true
+  - input:
+    - false, false
+    output:
+    - true
+- name: Booleans 3
+  difficulty: 2
+  help: *boolhelp
+  hint: *boolhint
+  parts:
+  - |
+     package main
+     import "fmt"
      
+     // Return true if exactly one out of a, b, and c is true. Else return false.
+     func solve(a, b, c bool) bool {
+        return false
+     }
+  tests:
+  - input:
+    - false, false, false
+    output:
+    - false
+  - input:
+    - false, false, true
+    output:
+    - true
+  - input:
+    - false, true, false
+    output:
+    - true
+  - input:
+    - false, true, true
+    output:
+    - false
+  - input:
+    - true, false, false
+    output:
+    - true
+  - input:
+    - true, false, true
+    output:
+    - false
+  - input:
+    - true, true, false
+    output:
+    - false
+  - input:
+    - true, true, true
+    output:
+    - false
+- name: Average math
+  difficulty: 2
+  help: 'http://golang.org/ref/spec#Operator_precedence'
+  hint: Remember to use parenthesis to ensure order of operation!
+  parts:
+  - |
+     package main
+     import "fmt"
      
+     // Returns the average of all three parameters
+     func solve(a, b, c int) int {
+        return 0
+     }
+  tests:
+  - input:
+    - 1, 2, 6
+    output:
+    - 3
+  - input:
+    - 4, 5, 6
+    output:
+    - 5
+- name: Max
+  difficulty: 2
+  help: *ifhelp
+  hint: If a is greater than b, return a. Else return b.
+  parts:
+  - |
+     package main
+     import "fmt"
+     
+     // Returns the larger of the two parameters 'a' and 'b'. In the
+     //   event of a tie return that number.
+     func solve(a, b int) int {
+        return 0
+     }
+  tests:
+  - input:
+    - 1, 2
+    output:
+    - 2
+  - input:
+    - 8, 6
+    output:
+    - 8
+  - input:
+    - 1, 1
+    output:
+    - 1
