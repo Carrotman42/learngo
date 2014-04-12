@@ -74,7 +74,14 @@ func StartUI(input func()string) {
 	}
 }
 
-
+type NotImplemented string
+func (n NotImplemented) Choices(o Out) []string {
+	o(string(n), " is not yet implemented, sorry")
+	return nil
+}
+func (n NotImplemented) Choose(o Out, i int) (UIScreen, error) {
+	return nil, nil
+}
 
 type Out func(...interface{})
 
@@ -97,8 +104,8 @@ func (MainMenu) Choices(o Out) []string {
 func (MainMenu) Choose(o Out, i int) (UIScreen, error) {
 	switch i {
 		case 0: return &ProblemScreen{-1,false}, nil
-		case 1: return nil, nil
-		case 2: return nil, nil
+		case 1: return NotImplemented("Stats"), nil
+		case 2: return NotImplemented("Settings"), nil
 	}
 	return nil, nil
 }

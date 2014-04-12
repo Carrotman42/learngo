@@ -1,0 +1,30 @@
+- name: Hello World
+  difficulty: 0
+  parts:
+  - |
+     package main
+     import "fmt"
+     
+     // Returns "Hello World", as is customary in first examples
+     func solve() string {
+        return ""
+     }
+  tests:
+  - input:
+    output: '"Hello World"'
+- name: Simple math
+  difficulty: 1
+  parts:
+  - |
+     package main
+     import "fmt"
+     
+     // Returns the sum of all of all three parameters
+     func solve(a, b, c int) int {
+        return 0
+     }
+  tests:
+  - input: 1, 2, 7
+    output: 10
+  - input: 4, 5, 6
+    output: 15

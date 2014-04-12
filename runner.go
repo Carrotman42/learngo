@@ -24,7 +24,7 @@ type RunError struct {
 	out []byte
 }
 func (c RunError) Error() string {
-	if c.er != nil {
+	if c.er == nil {
 		return string(c.out)
 	}
 	return fmt.Sprint("Run error: ", c.er, "\n\n", string(c.out))

@@ -4,9 +4,44 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"gopkg.in/v1/yaml"
+	"encoding/gob"
+	"os"
 )
-var _ = yaml.Marshal
+
+const UserFile = "user.dat"
+const ProblemFile = "probs.yml"
+
+
+// Saves all user data
+func Save() error {
+	if f, err := os.Create("user.dat"); err != nil {
+		return err
+	} else {
+		err = gob.NewEncoder(f).Encode(solved)
+		f.Close()
+		return err
+	}
+}
+// Loads all user data
+func Load() {
+	var ok bool
+	if f, err := os.Open("user.dat"); err == nil {
+		if err = gob.NewDecoder(f).Decode(&solved); err == nil {
+			ok = true
+		}
+		f.Close()
+	}
+	if !ok {
+		solved = make(map[int]bool)
+	}
+}
+
+
+func init() {
+	Load() // Ignore if it fails
+}
 
 
 const WorkDir = "workspace"
@@ -45,12 +80,16 @@ fmt.Println("   actual   : ", `, outvars, `)
 	o("}")
 }
 
-var solved = make(map[int]bool)
+var solved map[int]bool
 func IsSolved(pid int) bool {
 	return solved[pid]
 }
 func MarkSolved(pid int) {
 	solved[pid] = true
+	
+	if err := Save(); err != nil {
+		fmt.Println("Error saving:", err)
+	}
 }
 
 type Problem struct {
@@ -79,38 +118,21 @@ func GetFile(pid int) string {
 }
 
 
-var raw = `name: Hello World
-difficulty: 0
-parts:
-- |
-   package main
-   import "fmt"
-   
-   // Should return a string that acknowledges the world
-   func solve() string {
-   	return ""
-   }
-tests:
-- input:
-  output:
-  - '"Hello World"'
-`
-
 func sl(s...string) []string {return s}
 
 var Probs = LoadProblems()
 func LoadProblems() []Problem {
-	type Hey struct {
-		A string
+	f, err := os.Open(ProblemFile)
+	if err == nil {
+		var ret []Problem
+		var all []byte
+		all, err = ioutil.ReadAll(f)
+		if err = yaml.Unmarshal(all, &ret); err == nil {
+			// Success!
+			return ret
+		}
 	}
-	h := Hey{`"Hello World"`}
-	a,b:=yaml.Marshal(h)
-	fmt.Println(string(a), b)
-	var ret Problem
-	if err := yaml.Unmarshal(([]byte)(raw), &ret); err != nil {
-		panic(err)
-	}
-	return []Problem{ret}
+	panic(err)
 }
 
 
