@@ -251,3 +251,33 @@
     - 1, 1
     output:
     - 1
+- name: Slices 1
+  difficulty: 2
+  help: &slicehelp 'http://golang.org/doc/effective_go.html#slices'
+  parts:
+  - |
+     package main
+     import "fmt"
+     
+     // Return the sum of the 0th element and the last element of the slice
+     //   You may assume that the slice has at least a single element.
+     func solve(a []int) int {
+        return 0
+     }
+  tests:
+  - input:
+    - '[]int{1, 2}'
+    output:
+    - 3
+  - input:
+    - '[]int{1, 4, 5, 6, 7, 8, 9, 0, 1, 4, 8}'
+    output:
+    - 9
+  - input:
+    - '[]int{1, 2, 7, 9, -3}'
+    output:
+    - -2
+  - input:
+    - '[]int{1}'
+    output:
+    - 2
